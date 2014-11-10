@@ -1,27 +1,45 @@
 package main
 
 import (
-	"os"
-	"io/ioutil"
 	"fmt"
+	"flag"
+	"io/ioutil"
 	"github.com/russross/blackfriday"
 	"github.com/microcosm-cc/bluemonday"
 )
 
 func main() {
-	args := os.Args[1:]
-	length := len(args)
 
-	for i := 0; i < length; i++ {
-		data, error := ioutil.ReadFile(args[i])
+	// define command line flag
+	o := flag.String("o", "", "Specify output file path")
 
-		if error != nil {
-			panic(error)
-		}
+	// parse arguments
+	flag.Parse()
 
-		unsafe := blackfriday.MarkdownCommon(data)
-		html := bluemonday.UGCPolicy().SanitizeBytes(unsafe)
+	// get arguments
+	args := flag.Args()
+	len := len(args)
 
+	if len == 0 {
+		// there is no markdown input
+		panic("Specify input markdown")
+	} else if len != 1 {
+		// there are multiple markdown files
+		panic("Cannot specify multiple input")
+	}
+
+	data, error := ioutil.ReadFile(args[0])
+
+	if error != nil {
+		panic(error)
+	}
+
+	unsafe := blackfriday.MarkdownCommon(data)
+	html := bluemonday.UGCPolicy().SanitizeBytes(unsafe)
+
+	if *o != "" {
+		ioutil.WriteFile(*o, unsafe, 0644)
+	} else {
 		fmt.Print(string(html))
 	}
 }
